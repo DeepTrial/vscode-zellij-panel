@@ -1,0 +1,68 @@
+{
+  "name": "vscode-zellij-panel",
+  "displayName": "Zellij Panel for VS Code",
+  "description": "Run Zellij in a Pseudoterminal-backed panel and visualize Claude Code file edits via hooks + file watching.",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vscode-zellij-panel.open",
+        "title": "Zellij Panel: Open Session"
+      },
+      {
+        "command": "vscode-zellij-panel.installHook",
+        "title": "Zellij Panel: Install Claude Code Hook"
+      }
+    ],
+    "configuration": {
+      "title": "Zellij Panel",
+      "properties": {
+        "vscode-zellij-panel.sessionMode": {
+          "type": "string",
+          "enum": [
+            "new",
+            "attach"
+          ],
+          "default": "new",
+          "description": "new = create a fresh Zellij session; attach = attach to an existing session name."
+        },
+        "vscode-zellij-panel.attachName": {
+          "type": "string",
+          "default": "",
+          "description": "Zellij session name to attach when sessionMode is 'attach'."
+        },
+        "vscode-zellij-panel.listenClaude": {
+          "type": "boolean",
+          "default": true,
+          "description": "When true, listen for Claude Code edits via local hook server + file watching and show diffs. When false, the panel only runs Zellij without edit capture."
+        },
+        "vscode-zellij-panel.hookPort": {
+          "type": "number",
+          "default": 3910,
+          "description": "Port for the local Claude Code hook receiver."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "dependencies": {
+    "node-pty": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  }
+}
