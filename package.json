@@ -16,20 +16,46 @@
   ],
   "activationEvents": [
     "onCommand:vscode-zellij-panel.open",
-    "onCommand:vscode-zellij-panel.installHook"
+    "onCommand:vscode-zellij-panel.installHook",
+    "onStartupFinished"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "vscode-zellij-panel.open",
-        "title": "Zellij Panel: Open Session"
+        "title": "Zellij Panel: Open Session",
+        "category": "Zellij Panel",
+        "icon": "$(terminal)"
       },
       {
         "command": "vscode-zellij-panel.installHook",
-        "title": "Zellij Panel: Install Claude Code Hook"
+        "title": "Zellij Panel: Install Claude Code Hook",
+        "category": "Zellij Panel",
+        "icon": "$(tools)"
       }
     ],
+    "menus": {
+      "activitybar/explorer": [],
+      "view/title": [],
+      "commandPalette": [
+        {
+          "command": "vscode-zellij-panel.open",
+          "group": "zellij@1"
+        },
+        {
+          "command": "vscode-zellij-panel.installHook",
+          "group": "zellij@2"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "vscode-zellij-panel.open",
+          "group": "navigation",
+          "when": "false"
+        }
+      ]
+    },
     "configuration": {
       "title": "Zellij Panel",
       "properties": {

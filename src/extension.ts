@@ -3,7 +3,10 @@ import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as http from 'http';
-import * as pty from 'node-pty';
+// NOTE: node-pty is a native module. Requiring it at the top level would crash
+// the whole extension activation on platforms without a usable prebuild, leaving
+// the commands unregistered ("command not found"). We load it lazily inside the
+// function that needs it so activation + command registration always succeed.
 
 // ---------------------------------------------------------------------------
 // Config helpers
@@ -94,12 +97,27 @@ function stopFileWatcher(): void {
 class ZellijPty implements vscode.Pseudoterminal {
   private writeEmitter = new vscode.EventEmitter<string>();
   private closeEmitter = new vscode.EventEmitter<number>();
-  private ptyProcess: pty.IPty | undefined;
+  private ptyProcess: any | undefined;
 
   onDidWrite = this.writeEmitter.event;
   onDidClose = this.closeEmitter.event;
 
   open(): void {
+    // Lazily require the native module inside the method so a missing prebuild
+    // surfaces as a friendly error instead of crashing activation.
+    let pty: typeof import('node-pty');
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      pty = require('node-pty');
+    } catch (e) {
+      vscode.window.showErrorMessage(
+        'Zellij Panel: node-pty native module failed to load. ' +
+          'On Linux you may need to rebuild it (npm rebuild node-pty) or install ' +
+          'build tools (python3, make, g++). Details: ' +
+          (e instanceof Error ? e.message : String(e)),
+      );
+      return;
+    }
     const mode = cfg<string>('sessionMode', 'new');
     const attach = cfg<string>('attachName', '');
     let args: string[];
@@ -115,8 +133,8 @@ class ZellijPty implements vscode.Pseudoterminal {
       cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? os.homedir(),
       env: process.env as Record<string, string>,
     });
-    this.ptyProcess.onData((d) => this.writeEmitter.fire(d));
-    this.ptyProcess.onExit((e) => this.closeEmitter.fire(e.exitCode));
+    this.ptyProcess.onData((d: string) => this.writeEmitter.fire(d));
+    this.ptyProcess.onExit((e: { exitCode: number }) => this.closeEmitter.fire(e.exitCode));
   }
 
   handleInput(data: string): void {
@@ -136,10 +154,9 @@ class ZellijPty implements vscode.Pseudoterminal {
 // Commands
 // ---------------------------------------------------------------------------
 function openPanel(): void {
-  const pty = new ZellijPty();
   const term = vscode.window.createTerminal({
     name: 'Zellij',
-    pty,
+    pty: new ZellijPty(),
   } as vscode.ExtensionTerminalOptions);
   term.show();
 

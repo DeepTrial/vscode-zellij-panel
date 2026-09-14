@@ -25,6 +25,11 @@ jobs:
       - name: Install dependencies
         run: npm install --include=dev --no-audit --no-fund
 
+      - name: Rebuild native module (node-pty) for the runner platform
+        # node-pty ships per-platform prebuilds via optionalDependencies; ensure
+        # a usable native binary exists for the CI runner (and thus the vsix).
+        run: npm rebuild node-pty
+
       - name: Compile
         run: npm run compile
 
