@@ -50,5 +50,8 @@ jobs:
       - name: Install dependencies
         run: npm install --include=dev --no-audit --no-fund
 
+      - name: Compile
+        run: npm run compile
+
       - name: Run extension tests (headless via xvfb)
         run: xvfb-run -a npm test
