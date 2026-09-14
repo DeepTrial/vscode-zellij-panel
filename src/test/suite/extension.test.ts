@@ -66,4 +66,19 @@ suite('Zellij Panel Extension', () => {
       }
     }
   });
+
+  test('sidebar view is contributed', async () => {
+    const ext = vscode.extensions.all.find((e) =>
+      e.id.endsWith('vscode-zellij-panel'),
+    );
+    assert.ok(ext, 'extension vscode-zellij-panel not found');
+    const views =
+      ext!.packageJSON?.contributes?.views?.['zellij-panel'] ||
+      ext!.packageJSON?.contributes?.views?.['zellij-panel.actions'];
+    assert.ok(views, 'zellij-panel views container not contributed');
+    const hasActions = (views as any[]).some(
+      (v) => v.id === 'zellij-panel.actions',
+    );
+    assert.ok(hasActions, 'zellij-panel.actions view not contributed');
+  });
 });
