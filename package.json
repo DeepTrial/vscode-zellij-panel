@@ -7,7 +7,7 @@
     "url": "https://github.com/DeepTrial/vscode-zellij-panel.git"
   },
   "description": "Run Zellij in a Pseudoterminal-backed panel and visualize Claude Code file edits via hooks + file watching.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -116,9 +116,7 @@
     "package": "vsce package",
     "lint": "tsc -p ./ --noEmit"
   },
-  "dependencies": {
-    "node-pty": "^1.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.6",

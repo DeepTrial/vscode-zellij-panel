@@ -10,6 +10,7 @@ Run **Zellij** inside a VS Code panel (via the official `Pseudoterminal` API, re
 ## Features
 
 - Zellij runs in a real pseudoterminal-backed panel — no xterm.js reimplementation.
+- **No native dependencies**: Zellij is bridged via the built-in `child_process` (no `node-pty` build step, works on VS Code Remote Linux out of the box).
 - Configurable session mode: **new** (fresh session) or **attach** (existing session name).
 - Optional Claude Code edit capture (`listenClaude`):
   - A local hook receiver gets `PreToolUse` / `PostEdit` events from Claude Code, snapshots the file before the edit, and opens a `vscode.diff` when the edit lands.

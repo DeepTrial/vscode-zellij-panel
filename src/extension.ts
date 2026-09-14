@@ -3,6 +3,7 @@ import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as http from 'http';
+import { spawn } from 'child_process';
 // NOTE: node-pty is a native module. Requiring it at the top level would crash
 // the whole extension activation on platforms without a usable prebuild, leaving
 // the commands unregistered ("command not found"). We load it lazily inside the
@@ -94,59 +95,20 @@ function stopFileWatcher(): void {
 // ---------------------------------------------------------------------------
 // Pseudoterminal that runs Zellij
 // ---------------------------------------------------------------------------
-// On Linux, node-pty 1.1.0 looks for its native binary in (in order):
-//   build/Release/pty.node, build/Debug/pty.node, prebuilds/<plat>-<arch>/pty.node
-// The vsix ships the N-API binary as prebuilds/linux-x64/pty.node. Some VS Code
-// Remote setups fail to load from that exact path, so at runtime we copy the
-// binary into ALL three candidate locations to guarantee a load.
-function ensurePtyBinary(): void {
-  if (process.platform !== 'linux') return;
-  try {
-    const modDir = path.dirname(require.resolve('node-pty')); // .../node-pty/lib
-    const base = path.resolve(modDir, '..'); // .../node-pty
-    const src = path.join(base, 'prebuilds', 'linux-x64', 'pty.node');
-    if (!fs.existsSync(src)) return; // not our layout; let require handle it
-    for (const rel of [
-      'build/Release/pty.node',
-      'build/Debug/pty.node',
-      'prebuilds/linux-x64/pty.node',
-    ]) {
-      const dst = path.join(base, rel);
-      if (!fs.existsSync(dst)) {
-        fs.mkdirSync(path.dirname(dst), { recursive: true });
-        fs.copyFileSync(src, dst);
-      }
-    }
-  } catch {
-    // best-effort; require() below will surface a clear error if it still fails
-  }
-}
-
+// NOTE: We deliberately avoid node-pty (a native module). On VS Code Remote
+// Linux the bundled native .node fails to dlopen inside the extension host
+// (ABI/glibc isolation), so we bridge Zellij with the built-in
+// child_process.spawn + a pipe, feeding stdout/stderr into the pseudoterminal
+// and writing user keystrokes to the child's stdin. No native deps required.
 class ZellijPty implements vscode.Pseudoterminal {
   private writeEmitter = new vscode.EventEmitter<string>();
   private closeEmitter = new vscode.EventEmitter<number>();
-  private ptyProcess: any | undefined;
+  private child: ReturnType<typeof spawn> | undefined;
 
   onDidWrite = this.writeEmitter.event;
   onDidClose = this.closeEmitter.event;
 
   open(): void {
-    // Lazily require the native module inside the method so a missing prebuild
-    // surfaces as a friendly error instead of crashing activation.
-    ensurePtyBinary();
-    let pty: typeof import('node-pty');
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      pty = require('node-pty');
-    } catch (e) {
-      vscode.window.showErrorMessage(
-        'Zellij Panel: node-pty native module failed to load. ' +
-          'On Linux you may need to rebuild it (npm rebuild node-pty) or install ' +
-          'build tools (python3, make, g++). Details: ' +
-          (e instanceof Error ? e.message : String(e)),
-      );
-      return;
-    }
     const mode = cfg<string>('sessionMode', 'new');
     const attach = cfg<string>('attachName', '');
     let args: string[];
@@ -155,27 +117,31 @@ class ZellijPty implements vscode.Pseudoterminal {
     } else {
       args = ['-s', `zellij-panel-${Date.now()}`];
     }
-    this.ptyProcess = pty.spawn('zellij', args, {
-      name: 'xterm-color',
-      cols: 80,
-      rows: 24,
-      cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? os.homedir(),
+    const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? os.homedir();
+    this.child = spawn('zellij', args, {
+      cwd,
       env: process.env as Record<string, string>,
     });
-    this.ptyProcess.onData((d: string) => this.writeEmitter.fire(d));
-    this.ptyProcess.onExit((e: { exitCode: number }) => this.closeEmitter.fire(e.exitCode));
+    this.child.stdout?.on('data', (d: Buffer) => this.writeEmitter.fire(d.toString()));
+    this.child.stderr?.on('data', (d: Buffer) => this.writeEmitter.fire(d.toString()));
+    this.child.on('exit', (code) => this.closeEmitter.fire(code ?? 0));
+    this.child.on('error', (err) => {
+      this.writeEmitter.fire(`\r\n[Zellij Panel] failed to start zellij: ${err.message}\r\n`);
+      this.closeEmitter.fire(-1);
+    });
   }
 
   handleInput(data: string): void {
-    this.ptyProcess?.write(data);
+    this.child?.stdin?.write(data);
   }
 
-  setDimensions(dimensions: vscode.TerminalDimensions): void {
-    this.ptyProcess?.resize(dimensions.columns, dimensions.rows);
+  setDimensions(_dimensions: vscode.TerminalDimensions): void {
+    // Child process inherits the PTY size from the parent terminal; Zellij
+    // handles resize via its own SIGWINCH handling, so no explicit resize needed.
   }
 
   close(): void {
-    this.ptyProcess?.kill();
+    this.child?.kill();
   }
 }
 
