@@ -30,6 +30,17 @@ jobs:
         # a usable native binary exists for the CI runner (and thus the vsix).
         run: npm rebuild node-pty
 
+      - name: Ensure linux-x64 prebuild is present in node-pty
+        # node-pty 1.1.0 prefers prebuilds/linux-x64/pty.node on Linux. The
+        # source-built build/Release/pty.node is N-API (ABI-stable), so copying
+        # it into the prebuilds path guarantees the extension loads on remote
+        # Linux VS Code Server without a local toolchain.
+        run: |
+          SRC=node_modules/node-pty/build/Release/pty.node
+          DST=node_modules/node-pty/prebuilds/linux-x64/pty.node
+          mkdir -p "$(dirname "$DST")"
+          cp -f "$SRC" "$DST"
+
       - name: Compile
         run: npm run compile
 
