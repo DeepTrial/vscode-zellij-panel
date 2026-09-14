@@ -94,6 +94,34 @@ function stopFileWatcher(): void {
 // ---------------------------------------------------------------------------
 // Pseudoterminal that runs Zellij
 // ---------------------------------------------------------------------------
+// On Linux, node-pty 1.1.0 looks for its native binary in (in order):
+//   build/Release/pty.node, build/Debug/pty.node, prebuilds/<plat>-<arch>/pty.node
+// The vsix ships the N-API binary as prebuilds/linux-x64/pty.node. Some VS Code
+// Remote setups fail to load from that exact path, so at runtime we copy the
+// binary into ALL three candidate locations to guarantee a load.
+function ensurePtyBinary(): void {
+  if (process.platform !== 'linux') return;
+  try {
+    const modDir = path.dirname(require.resolve('node-pty')); // .../node-pty/lib
+    const base = path.resolve(modDir, '..'); // .../node-pty
+    const src = path.join(base, 'prebuilds', 'linux-x64', 'pty.node');
+    if (!fs.existsSync(src)) return; // not our layout; let require handle it
+    for (const rel of [
+      'build/Release/pty.node',
+      'build/Debug/pty.node',
+      'prebuilds/linux-x64/pty.node',
+    ]) {
+      const dst = path.join(base, rel);
+      if (!fs.existsSync(dst)) {
+        fs.mkdirSync(path.dirname(dst), { recursive: true });
+        fs.copyFileSync(src, dst);
+      }
+    }
+  } catch {
+    // best-effort; require() below will surface a clear error if it still fails
+  }
+}
+
 class ZellijPty implements vscode.Pseudoterminal {
   private writeEmitter = new vscode.EventEmitter<string>();
   private closeEmitter = new vscode.EventEmitter<number>();
@@ -105,6 +133,7 @@ class ZellijPty implements vscode.Pseudoterminal {
   open(): void {
     // Lazily require the native module inside the method so a missing prebuild
     // surfaces as a friendly error instead of crashing activation.
+    ensurePtyBinary();
     let pty: typeof import('node-pty');
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
