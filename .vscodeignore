@@ -1,0 +1,16 @@
+.vscode/**
+.vscode-test/**
+src/**
+.github/**
+**/*.ts
+**/*.map
+**/*.tsbuildinfo
+tsconfig.json
+.gitignore
+node_modules/@vscode/test-electron/**
+node_modules/@vscode/vsce/**
+node_modules/@types/**
+node_modules/mocha/**
+node_modules/glob/**
+node_modules/typescript/**
+node_modules/.bin/**

@@ -1,6 +1,11 @@
 {
   "name": "vscode-zellij-panel",
   "displayName": "Zellij Panel for VS Code",
+  "publisher": "DeepTrial",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DeepTrial/vscode-zellij-panel.git"
+  },
   "description": "Run Zellij in a Pseudoterminal-backed panel and visualize Claude Code file edits via hooks + file watching.",
   "version": "0.1.0",
   "engines": {
@@ -9,7 +14,10 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onCommand:vscode-zellij-panel.open",
+    "onCommand:vscode-zellij-panel.installHook"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -55,14 +63,23 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "test": "node ./dist/test/runTest.js",
+    "package": "vsce package",
+    "lint": "tsc -p ./ --noEmit"
   },
   "dependencies": {
     "node-pty": "^1.0.0"
   },
   "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.6",
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^2.24.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.3.0",
     "typescript": "^5.4.0"
   }
 }
