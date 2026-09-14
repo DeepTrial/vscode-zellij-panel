@@ -5,6 +5,10 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+# Allow the default GITHUB_TOKEN to create GitHub Releases (needs contents: write).
+permissions:
+  contents: write
+
 jobs:
   build-vsix:
     runs-on: ubuntu-latest
