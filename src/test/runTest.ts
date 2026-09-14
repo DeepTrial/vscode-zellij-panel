@@ -4,11 +4,9 @@ import { runTests } from '@vscode/test-electron';
 async function main() {
   try {
     const extensionDevelopmentPath = path.resolve(__dirname, '../../');
-    const extensionTestsPath = path.resolve(__dirname, './extension.test');
+    const extensionTestsPath = path.resolve(__dirname, './suite/index');
     await runTests({
-      // Pin a VS Code version whose extension test runner still uses the
-      // mocha global-injection model (suite/test). Newer insiders/1.137+
-      // changed the runner and break `suite is not defined`.
+      // Pin a VS Code version for reproducible CI/local runs.
       version: '1.89.0',
       extensionDevelopmentPath,
       extensionTestsPath,

@@ -33,11 +33,10 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    # Extension tests require a headless VS Code (xvfb). They pass in a standard
-    # local VS Code environment; in CI the mocha global-injection into the
-    # extension host can be flaky across VS Code versions, so this job is
-    # allowed to fail and does NOT block the build/release pipeline.
-    continue-on-error: true
+    # Extension tests run headless via xvfb. They previously used
+    # continue-on-error because of a mocha global-injection issue; that is now
+    # fixed (programmatic Mocha runner + explicit activation), so the test job
+    # is a real gate.
     steps:
       - uses: actions/checkout@v4
 

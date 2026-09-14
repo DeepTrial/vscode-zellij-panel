@@ -3,12 +3,30 @@ import * as vscode from 'vscode';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
-// `suite` / `test` are injected as globals by @vscode/test-electron's mocha runner.
+
+// `suite` / `test` are provided as globals by the programmatic Mocha runner
+// in ./index.ts (TDD interface). Do NOT import them from 'mocha' here.
+
+// The extension uses `onCommand` activation events, so it is NOT activated
+// merely by being loaded. We must activate it (or trigger one of its
+// commands) before asserting that its commands are registered. The full id
+// is `<publisher>.vscode-zellij-panel`; resolve it dynamically to avoid
+// hard-coding the publisher.
+async function ensureActivated(): Promise<void> {
+  const ext = vscode.extensions.all.find((e) =>
+    e.id.endsWith('vscode-zellij-panel'),
+  );
+  assert.ok(ext, 'extension vscode-zellij-panel not found');
+  if (!ext.isActive) {
+    await ext.activate();
+  }
+}
 
 suite('Zellij Panel Extension', () => {
   vscode.window.showInformationMessage('Starting Zellij Panel tests.');
 
   test('commands are registered', async () => {
+    await ensureActivated();
     const commands = await vscode.commands.getCommands(true);
     assert.ok(
       commands.includes('vscode-zellij-panel.open'),
@@ -21,6 +39,7 @@ suite('Zellij Panel Extension', () => {
   });
 
   test('installHook writes Claude Code settings', async () => {
+    await ensureActivated();
     const settingsPath = path.join(os.homedir(), '.claude', 'settings.json');
     const backup = fs.existsSync(settingsPath)
       ? fs.readFileSync(settingsPath, 'utf8')
