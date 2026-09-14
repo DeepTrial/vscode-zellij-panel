@@ -192,12 +192,35 @@ function installHook(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Sidebar view (activity bar icon + clickable "Open Session" item)
+// ---------------------------------------------------------------------------
+class ZellijActionsProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
+  getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
+    return element;
+  }
+  getChildren(_element?: vscode.TreeItem): vscode.ProviderResult<vscode.TreeItem[]> {
+    const open = new vscode.TreeItem('Open Zellij Session', vscode.TreeItemCollapsibleState.None);
+    open.iconPath = new vscode.ThemeIcon('terminal');
+    open.command = {
+      command: 'vscode-zellij-panel.open',
+      title: 'Open Zellij Session',
+    };
+    return [open];
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Activate / Deactivate
 // ---------------------------------------------------------------------------
 export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.commands.registerCommand('vscode-zellij-panel.open', openPanel),
     vscode.commands.registerCommand('vscode-zellij-panel.installHook', installHook),
+  );
+  // Register the sidebar view so the activity-bar icon shows a clickable item.
+  const treeProvider = new ZellijActionsProvider();
+  context.subscriptions.push(
+    vscode.window.registerTreeDataProvider('zellij-panel.actions', treeProvider),
   );
 }
 

@@ -21,6 +21,23 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "zellij-panel",
+          "title": "Zellij Panel",
+          "icon": "$(terminal)"
+        }
+      ]
+    },
+    "views": {
+      "zellij-panel": [
+        {
+          "id": "zellij-panel.actions",
+          "name": "Actions"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "vscode-zellij-panel.open",
@@ -36,8 +53,13 @@
       }
     ],
     "menus": {
-      "activitybar/explorer": [],
-      "view/title": [],
+      "view/title": [
+        {
+          "command": "vscode-zellij-panel.open",
+          "when": "view == zellij-panel.actions",
+          "group": "navigation"
+        }
+      ],
       "commandPalette": [
         {
           "command": "vscode-zellij-panel.open",
@@ -47,15 +69,15 @@
           "command": "vscode-zellij-panel.installHook",
           "group": "zellij@2"
         }
-      ],
-      "editor/title": [
-        {
-          "command": "vscode-zellij-panel.open",
-          "group": "navigation",
-          "when": "false"
-        }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "zellij-panel.actions",
+        "contents": "No session open yet.\n[Open Zellij Session](command:vscode-zellij-panel.open)",
+        "when": "true"
+      }
+    ],
     "configuration": {
       "title": "Zellij Panel",
       "properties": {
