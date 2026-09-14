@@ -16,6 +16,12 @@ jobs:
         with:
           node-version: 24
 
+      - name: Normalize lockfile registry for CI
+        # The committed lockfile pins tencentyun mirror URLs that are
+        # unreachable from GitHub-hosted runners. Rewrite to the public npm
+        # registry so install succeeds on CI (harmless on local machines).
+        run: sed -i 's#mirrors.tencentyun.com/npm/#registry.npmjs.org/#g' package-lock.json
+
       - name: Install dependencies
         run: npm install --include=dev --no-audit --no-fund
 
@@ -38,6 +44,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+
+      - name: Normalize lockfile registry for CI
+        run: sed -i 's#mirrors.tencentyun.com/npm/#registry.npmjs.org/#g' package-lock.json
 
       - name: Install dependencies
         run: npm install --include=dev --no-audit --no-fund
